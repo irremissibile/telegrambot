@@ -1,5 +1,6 @@
 import net.objecthunter.exp4j.Expression;
 import net.objecthunter.exp4j.ValidationResult;
+import net.objecthunter.exp4j.tokenizer.UnknownFunctionOrVariableException;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
@@ -14,14 +15,28 @@ public class Responser {
         this.bot = bot;
     }
 
+    public void sendResult(long chatID, double result){
+        SendMessage message = new SendMessage()
+                .setChatId(chatID)
+                .setText("Yeah, here's the result, buddy :)" +
+                        "\nResult: " + String.format("%.5f", result));
+
+        try {
+            bot.execute(message);
+        } catch (TelegramApiException e) {
+            e.printStackTrace();
+        }
+
+    }
+
     public void parseUpdate(Update update){
         if (update.hasMessage() && update.getMessage().hasText()) {
             String message_text = update.getMessage().getText();
-            long chat_id = update.getMessage().getChatId();
+            long chatID = update.getMessage().getChatId();
 
             if(message_text.equals("/start")) {
                 SendMessage message = new SendMessage()
-                        .setChatId(chat_id)
+                        .setChatId(chatID)
                         .setText("Hello, buddy! I can evaluate your " +
                                 "integral. To start just pass me the function :)\n" +
                                 "Example: 3*sin(x)");
@@ -33,7 +48,7 @@ public class Responser {
 
             } else if (message_text.equals("/help")) {
                 SendMessage message = new SendMessage()
-                        .setChatId(chat_id)
+                        .setChatId(chatID)
                         .setText("The list of allowed functions \n" +
                                 "abs(x)\n" +
                                 "acos(x)\n" +
@@ -53,76 +68,62 @@ public class Responser {
                     e.printStackTrace();
                 }
             } else {
-                if (watchdog.checkIfUserHasInputFunction(chat_id)) {
+                if (watchdog.checkIfUserHasInputFunction(chatID)) {
                     if (message_text.matches("-?\\d+(.*)\\s(-?)\\d+(.*)")) {
                         String[] p = message_text.split("\\s");
                         Double xmin = Double.parseDouble(p[0]);
                         Double xmax = Double.parseDouble(p[1]);
-                        if (xmin <= xmax)
-                            watchdog.addPointsToOrder(chat_id, xmin, xmax);
-                        else {
+                        if (xmin <= xmax) {
+                            try {
+                                bot.execute(new SendMessage().setChatId(chatID).setText("Let's see..."));
+                            } catch (TelegramApiException e) {
+                                e.printStackTrace();
+                            }
+                            watchdog.addPointsToOrder(chatID, xmin, xmax);
+                        } else {
+                            try {
+                                bot.execute(new SendMessage().setChatId(chatID).setText("The first point must be the lowest one"));
+                            } catch (TelegramApiException e) {
+                                e.printStackTrace();
+                            }
                         }
 
-                        //REPORT ERROR
-
                     } else {
+                        try {
+                            bot.execute(new SendMessage().setChatId(chatID).setText("Points must be separated by a whitespace"));
+                        } catch (TelegramApiException e) {
+                            e.printStackTrace();
+                        }
                     }
-
-                    //REPORT ERROR
-
                 } else {
-                    Expression e = new ExpressionBuilder(message_text).variable("x").build();
-                    ValidationResult res = e.validate();
-                    if (res.isValid()) {
-                        watchdog.addOrder(chat_id, message_text);
-                    } else {
+                    Expression e;
+                    try {
+                        e = new ExpressionBuilder(message_text).variable("x").build();
+                        ValidationResult res = e.validate();
+                        if (!res.isValid()) {
+                            watchdog.addOrder(chatID, message_text);
+                            try {
+                                bot.execute(new SendMessage().setChatId(chatID).setText("Now input the points of integration"));
+                            } catch (TelegramApiException e2) {
+                                e2.printStackTrace();
+                            }
+                        } else {
+                            try {
+                                bot.execute(new SendMessage().setChatId(chatID).setText("Ooops... Looks like you've input something wrong"));
+                            } catch (TelegramApiException e1) {
+                                e1.printStackTrace();
+                            }
+                        }
+                    } catch (UnknownFunctionOrVariableException exp){
+                        exp.printStackTrace();
+                        try {
+                            bot.execute(new SendMessage().setChatId(chatID).setText("Looks like you've input something wrong"));
+                        } catch (TelegramApiException e2) {
+                            e2.printStackTrace();
+                        }
                     }
-
-                    //REPORT ERROR
-
                 }
             }
-
-
-                SendMessage message = new SendMessage();
-
-                try{
-                    int firstEnd = message_text.indexOf(',');
-                    int secondEnd = message_text.lastIndexOf(',');
-                    String function = message_text.substring(0, firstEnd);
-                    String left = message_text.substring(firstEnd + 1, secondEnd);
-                    String right = message_text.substring(secondEnd + 1);
-
-                    double xmin = Double.parseDouble(left);
-                    double xmax = Double.parseDouble(right);
-
-                    IntegrationHub hub = new IntegrationHub(function, xmin, xmax);
-
-                    double result1 = hub.getResult1();
-                    double result2 = hub.getResult2();
-                    double result3 = hub.getResult3();
-                    double result4 = hub.getResult4();
-                    double result5 = hub.getResult5();
-                    double average = (0.1*result1 + 0.2*result2 + 0.3*result3 + 0.1*result4 + 0.3*result5);
-
-
-                    message.setChatId(chat_id)
-                            .setText("Результат м.прямоугольников: " + String.format("%.5f", result1) +
-                                    "\nРезультат м.трапеций: " + String.format("%.5f", result2) +
-                                    "\nРезультат м.Симпсона: " + String.format("%.5f", result3) +
-                                    "\nРезультат м.3/8: " + String.format("%.5f", result4) +
-                                    "\nРезультат м.Гауcса: " + String.format("%.5f", result5) +
-                                    "\n\nПредлагаемый результат: " + String.format("%.5f", average));
-                } catch (Exception e){
-                    message.setChatId(chat_id)
-                            .setText("*скрежет шестеренок*\nКажется, бот поломался - опять чинить. Попробуйте что-то другое :/");
-                }
-
-                try {
-                    bot.execute(message);
-                } catch (TelegramApiException e) {
-                    e.printStackTrace();
-                }
         }
     }
 }

@@ -9,9 +9,9 @@ public class Watchdog {
         this.responser = responser;
     }
 
-    public boolean checkIfUserHasInputFunction(long chat_id){
+    public boolean checkIfUserHasInputFunction(long chatID){
         for(Order o : orders){
-            if(o.getChat_id() == chat_id)
+            if(o.getChatID() == chatID)
                 return true;
                 //if there's an order, the function is already set
                 //need to only input points
@@ -19,16 +19,23 @@ public class Watchdog {
         return false;
     }
 
-    public void addPointsToOrder(long chat_id, double xmin, double xmax){
-        for(Order o : orders){
-            if(o.getChat_id() == chat_id){
-                o.setXmin(xmin);
-                o.setXmax(xmax);
+    public void addPointsToOrder(long chatID, double xmin, double xmax){
+        for(int i = 0; i < orders.size(); i++){
+            if(orders.get(i).getChatID() == chatID){
+                orders.get(i).setXmin(xmin);
+                orders.get(i).setXmax(xmax);
+
+
+                //Before concurrency hasn't been implemented
+                //Later will be deprecated
+                orders.get(i).execute(responser);
+                orders.remove(i);
             }
         }
     }
 
-    public void addOrder(long chat_id, String function){
-
+    public void addOrder(long chatID, String function){
+        Order order = new Order(chatID, function);
+        orders.add(order);
     }
 }

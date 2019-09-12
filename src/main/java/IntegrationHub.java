@@ -16,6 +16,10 @@ public class IntegrationHub {
         result5 = method5.Integrate();
     }
 
+    public double getResult(){
+        return (0.1*result1 + 0.2*result2 + 0.3*result3 + 0.1*result4 + 0.3*result5);
+    }
+
     public double getResult1() {
         return result1;
     }

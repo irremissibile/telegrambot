@@ -19,13 +19,12 @@ public class telegramBot extends TelegramLongPollingBot {
         return "735597691:AAENMMTbqcNwvE9SXNmNCmO8yhaUt9r57UA";
     }
 
-    public static void sendMessage(SendMessage message){
-        execute(message);
-    }
-
     //@Override
     public void onUpdateReceived(Update update) {
-        if (update.hasMessage() && update.getMessage().hasText()) {
+        responser.parseUpdate(update);
+
+
+        /*if (update.hasMessage() && update.getMessage().hasText()) {
             String message_text = update.getMessage().getText();
             long chat_id = update.getMessage().getChatId();
 
@@ -116,7 +115,7 @@ public class telegramBot extends TelegramLongPollingBot {
                     e.printStackTrace();
                 }
             }
-        }
+        }*/
 
     }
 }

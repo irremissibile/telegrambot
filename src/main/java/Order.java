@@ -2,12 +2,11 @@ public class Order {
     private String function;
     private double xmin;
     private double xmax;
-    private double result;
-    private long chat_id;
+    private long chatID;
 
-    public Order(String function, long chat_id){
+    public Order(long chatID, String function){
         this.function = function;
-        this.chat_id = chat_id;
+        this.chatID = chatID;
     }
 
     public void setXmax(double xmax) {
@@ -18,12 +17,8 @@ public class Order {
         this.xmin = xmin;
     }
 
-    public double getResult() {
-        return result;
-    }
-
-    public long getChat_id() {
-        return chat_id;
+    public long getChatID() {
+        return chatID;
     }
 
     public double getXmax() {
@@ -36,5 +31,10 @@ public class Order {
 
     public String getFunction() {
         return function;
+    }
+
+    public void execute(Responser responser){
+        IntegrationHub hub = new IntegrationHub(function, xmin, xmax);
+        responser.sendResult(chatID, hub.getResult());
     }
 }
