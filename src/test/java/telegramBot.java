@@ -1,11 +1,13 @@
-import org.telegram.telegrambots.bots.TelegramLongPollingBot;
+import org.telegram.telegrambots.meta.api.methods.BotApiMethod;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
+import org.telegram.telegrambots.bots.TelegramLongPollingBot;
+import org.telegram.telegrambots.bots.TelegramWebhookBot;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
+import net.objecthunter.exp4j.*;
 
 public class telegramBot extends TelegramLongPollingBot {
     private long creator = 338022665;
-    private final Responser responser = new Responser(this);
 
     //@Override
     public String getBotUsername() {
@@ -17,10 +19,6 @@ public class telegramBot extends TelegramLongPollingBot {
     public String getBotToken() {
         // TODO
         return "735597691:AAENMMTbqcNwvE9SXNmNCmO8yhaUt9r57UA";
-    }
-
-    public static void sendMessage(SendMessage message){
-        execute(message);
     }
 
     //@Override

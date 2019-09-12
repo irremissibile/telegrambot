@@ -1,81 +1,89 @@
-import org.telegram.telegrambots.bots.TelegramLongPollingBot;
-import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import net.objecthunter.exp4j.Expression;
+import net.objecthunter.exp4j.ValidationResult;
 import org.telegram.telegrambots.meta.api.objects.Update;
+import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
+import net.objecthunter.exp4j.ExpressionBuilder;
 
-public class telegramBot extends TelegramLongPollingBot {
-    private long creator = 338022665;
-    private final Responser responser = new Responser(this);
 
-    //@Override
-    public String getBotUsername() {
-        // TODO
-        return "integrattorbot";
+public class Responser {
+    private final Watchdog watchdog = new Watchdog(this);
+    private final telegramBot bot;
+
+    public Responser(telegramBot bot) {
+        this.bot = bot;
     }
 
-    @Override
-    public String getBotToken() {
-        // TODO
-        return "735597691:AAENMMTbqcNwvE9SXNmNCmO8yhaUt9r57UA";
-    }
-
-    public static void sendMessage(SendMessage message){
-        execute(message);
-    }
-
-    //@Override
-    public void onUpdateReceived(Update update) {
+    public void parseUpdate(Update update){
         if (update.hasMessage() && update.getMessage().hasText()) {
             String message_text = update.getMessage().getText();
             long chat_id = update.getMessage().getChatId();
 
-
-            //***debug
-            String user_username = update.getMessage().getChat().getUserName();
-            SendMessage forward = new SendMessage()
-                    .setChatId(creator)
-                    .setText("@" + user_username + " " + message_text);
-            try {
-                execute(forward);
-            } catch(TelegramApiException e){
-                e.printStackTrace();
-            }
-            //***
-
-
             if(message_text.equals("/start")) {
                 SendMessage message = new SendMessage()
                         .setChatId(chat_id)
-                        .setText("Привет, я могу посчитать твой интеграл. Для начала " +
-                                "введи функцию и промежуток интегрирования через запятые :)\n" +
-                                "Пример: 3*sin(x), -2, 3");
+                        .setText("Hello, buddy! I can evaluate your " +
+                                "integral. To start just pass me the function :)\n" +
+                                "Example: 3*sin(x)");
                 try {
-                    execute(message);
+                    bot.execute(message);
                 } catch (TelegramApiException e) {
                     e.printStackTrace();
                 }
+
             } else if (message_text.equals("/help")) {
                 SendMessage message = new SendMessage()
                         .setChatId(chat_id)
-                        .setText("Список доступных функций \n" +
-                                "abs(x): модуль x\n" +
-                                "acos(x): arccos(x)\n" +
-                                "asin(x): arcsin(x)\n" +
-                                "atan(x): arctg(x)\n" +
-                                "cos(x): cos(x)\n" +
-                                "exp(x): e^x\n" +
-                                "log(x): ln(x)\n" +
-                                "log10(x): log(x) по основанию 10\n" +
-                                "log2(x): log(x) по основанию 2\n" +
-                                "sin(x): sin(x)\n" +
-                                "sqrt(x): квадр. корень x\n" +
-                                "tan(x): tg(x)\n");
+                        .setText("The list of allowed functions \n" +
+                                "abs(x)\n" +
+                                "acos(x)\n" +
+                                "asin(x)\n" +
+                                "atan(x)\n" +
+                                "cos(x)\n" +
+                                "exp(x)\n" +
+                                "log(x)\n" +
+                                "log10(x)\n" +
+                                "log2(x)\n" +
+                                "sin(x)\n" +
+                                "sqrt(x)\n" +
+                                "tan(x)\n");
                 try {
-                    execute(message);
+                    bot.execute(message);
                 } catch (TelegramApiException e) {
                     e.printStackTrace();
                 }
             } else {
+                if (watchdog.checkIfUserHasInputFunction(chat_id)) {
+                    if (message_text.matches("-?\\d+(.*)\\s(-?)\\d+(.*)")) {
+                        String[] p = message_text.split("\\s");
+                        Double xmin = Double.parseDouble(p[0]);
+                        Double xmax = Double.parseDouble(p[1]);
+                        if (xmin <= xmax)
+                            watchdog.addPointsToOrder(chat_id, xmin, xmax);
+                        else {
+                        }
+
+                        //REPORT ERROR
+
+                    } else {
+                    }
+
+                    //REPORT ERROR
+
+                } else {
+                    Expression e = new ExpressionBuilder(message_text).variable("x").build();
+                    ValidationResult res = e.validate();
+                    if (res.isValid()) {
+                        watchdog.addOrder(chat_id, message_text);
+                    } else {
+                    }
+
+                    //REPORT ERROR
+
+                }
+            }
+
+
                 SendMessage message = new SendMessage();
 
                 try{
@@ -111,12 +119,10 @@ public class telegramBot extends TelegramLongPollingBot {
                 }
 
                 try {
-                    execute(message);
+                    bot.execute(message);
                 } catch (TelegramApiException e) {
                     e.printStackTrace();
                 }
-            }
         }
-
     }
 }
